@@ -344,12 +344,21 @@ class MetabaseServer {
             description: "List all questions/cards in Metabase",
             inputSchema: {
               type: "object",
+              properties: {}
+            }
+          },
+          {
+            name: "get_card",
+            description: "Get a Metabase question/card by ID",
+            inputSchema: {
+              type: "object",
               properties: {
-                f: {
-                  type: "string",
-                  description: "Optional filter function, possible values: archived, table, database, using_model, bookmarked, using_segment, all, mine"
+                card_id: {
+                  type: "number",
+                  description: "ID of the card/question to get"
                 }
-              }
+              },
+              required: ["card_id"]
             }
           },
           {
@@ -371,8 +380,11 @@ class MetabaseServer {
                   description: "ID of the card/question to execute"
                 },
                 parameters: {
-                  type: "object",
-                  description: "Optional parameters for the query"
+                  type: "array",
+                  description: "Optional parameters for the query",
+                  items: {
+                    type: "object"
+                  }
                 }
               },
               required: ["card_id"]
@@ -528,8 +540,25 @@ class MetabaseServer {
           }
 
           case "list_cards": {
-            const f = request.params?.arguments?.f || "all";
-            const response = await this.axiosInstance.get(`/api/card?f=${f}`);
+            const response = await this.axiosInstance.get('/api/card');
+            return {
+              content: [{
+                type: "text",
+                text: JSON.stringify(response.data, null, 2)
+              }]
+            };
+          }
+
+          case "get_card": {
+            const cardId = request.params?.arguments?.card_id;
+            if (!cardId) {
+              throw new McpError(
+                ErrorCode.InvalidParams,
+                "Card ID is required"
+              );
+            }
+
+            const response = await this.axiosInstance.get(`/api/card/${cardId}`);
             return {
               content: [{
                 type: "text",
@@ -557,9 +586,9 @@ class MetabaseServer {
               );
             }
 
-            const parameters = request.params?.arguments?.parameters || {};
+            const parameters = request.params?.arguments?.parameters || [];
             const response = await this.axiosInstance.post(`/api/card/${cardId}/query`, { parameters });
-            
+
             return {
               content: [{
                 type: "text",
@@ -578,11 +607,12 @@ class MetabaseServer {
             }
 
             const response = await this.axiosInstance.get(`/api/dashboard/${dashboardId}`);
-            
+
+            // Return the full dashboard response including tabs, ordered_cards, and all other fields
             return {
               content: [{
                 type: "text",
-                text: JSON.stringify(response.data.cards, null, 2)
+                text: JSON.stringify(response.data, null, 2)
               }]
             };
           }
