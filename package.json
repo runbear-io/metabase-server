@@ -1,8 +1,11 @@
 {
-  "name": "metabase-server",
+  "name": "@runbear-io/metabase-server",
   "version": "0.1.0",
   "description": "A Model Context Protocol server",
-  "private": true,
+  "private": false,
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "type": "module",
   "bin": {
     "metabase-server": "./build/index.js"
